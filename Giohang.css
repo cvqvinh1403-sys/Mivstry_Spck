@@ -1,0 +1,53 @@
+
+        :root {
+            --primary-color: #d4a75c;
+            --bg-color: #121212;
+            --bg-card: #1e1e1e;
+            --text-card: #f0f0f0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-card);
+        }
+
+        .navbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid #333;
+        }
+
+        .cart-item {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+            transition: 0.3s;
+        }
+
+        .cart-item:hover {
+            border-color: var(--primary-color);
+        }
+
+        .cart-img {
+            width: 80px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+
+        .btn-remove {
+            color: #ff4d4d;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-remove:hover {
+            color: #ffb3b3;
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 50px 0;
+            color: #555;
+        }

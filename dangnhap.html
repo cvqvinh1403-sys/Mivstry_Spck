@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chào mừng trở lại - Đăng nhập</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="dangnhapky.css">
+</head>
+
+<body class="bg-dark">
+    <div class="container-fluid">
+        <div class="row min-vh-100">
+            <div class="col-md-6 image-slider" id="slider"></div>
+            <div class="col-md-6 d-flex align-items-center justify-content-center">
+                <div class="auth-card">
+                    <img style="width: 80px; height: 80px;"
+                        src="Gemini_Generated_Image_poeajwpoeajwpoea-removebg-preview.png" alt="logo">
+                    <h2 class="auth-title">Chào mừng trở lại</h2>
+                    <p class="text-muted mb-4">Nhập thông tin để truy cập vào hệ thống.</p>
+
+                    <form id="loginForm">
+                        <input type="email" id="loginEmail" class="form-control" placeholder="Email" required>
+                        <input type="password" id="loginPassword" class="form-control" placeholder="Mật khẩu" required>
+
+                        <button type="submit" class="btn-auth">ĐĂNG NHẬP</button>
+                        
+                        <div class="text-center my-3 text-muted">hoặc</div>
+                        <button type="button" id="btnGoogleLogin"
+                            class="btn btn-outline-light w-100 d-flex align-items-center justify-content-center gap-2"
+                            style="border-radius: var(--radius); padding: 0.75rem;">
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20"
+                                height="20" alt="Google">
+                            Đăng nhập bằng Google
+                        </button>
+                    </form>
+                    <p class="text-center mt-4">Chưa có tài khoản? <a href="dangky.html" class="auth-link">Đăng ký
+                            ngay</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db, signInWithPopup, googleProvider, doc, getDoc, setDoc } from './firebase-config.js';
+
+        const images = ["https://picsum.photos/1200/800?dark", "https://picsum.photos/1200/800?city"];
+        let i = 0;
+        const slider = document.getElementById("slider");
+        setInterval(() => {
+            slider.style.backgroundImage = `url('${images[i++ % images.length]}')`;
+        }, 5000);
+        slider.style.backgroundImage = `url('${images[0]}')`;
+
+        // Logic đăng nhập bằng Firebase
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("loginEmail").value;
+            const pass = document.getElementById("loginPassword").value;
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+                const user = userCredential.user;
+
+                // Lấy thông tin chi tiết người dùng từ Firestore
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                let fullname = "Bạn";
+                if (userDoc.exists()) {
+                    fullname = userDoc.data().fullname;
+                }
+
+                alert("Đăng nhập thành công! Chào mừng " + fullname);
+                window.location.href = "Trangchu.html";
+            } catch (error) {
+                alert("Email hoặc mật khẩu không chính xác hoặc không tồn tại!");
+            }
+        });
+
+    // LOGIC ĐĂNG NHẬP BẰNG GOOGLE
+    document.getElementById("btnGoogleLogin").addEventListener("click", async () => {
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            const user = result.user;
+
+            // Kiểm tra xem user đã có thông tin trong Firestore chưa
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (!userSnap.exists()) {
+                // Nếu là lần đầu đăng nhập, lưu thông tin Google User vào Firestore
+                await setDoc(userRef, {
+                    fullname: user.displayName || "Người dùng Google",
+                    email: user.email,
+                    avatar: user.photoURL || "",
+                    gender: "Không tiết lộ",
+                    createdAt: new Date().toISOString()
+                });
+            }
+
+            alert("Đăng nhập bằng Google thành công! Chào mừng " + (user.displayName || "bạn"));
+            window.location.href = "Trangchu.html";
+        } catch (error) {
+            console.error("Lỗi Google Auth:", error);
+            alert("Đăng nhập Google thất bại: " + error.message);
+        }
+    });
+    </script>
+</body>
+
+</html>

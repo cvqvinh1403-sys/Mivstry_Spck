@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tham gia ngay - Đăng ký</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="dangnhapky.css">
+</head>
+
+<body class="bg-dark">
+    <div class="container-fluid">
+        <div class="row min-vh-100">
+            <div class="col-md-6 image-slider" id="slider"></div>
+            <div class="col-md-6 d-flex align-items-center justify-content-center">
+                <div class="auth-card">
+                    <img style="width: 80px; height: 80px;"
+                        src="Gemini_Generated_Image_poeajwpoeajwpoea-removebg-preview.png" alt="logo">
+                    <h2 class="auth-title">Tạo tài khoản</h2>
+                    <p class="text-muted mb-4">Vui lòng điền thông tin bên dưới.</p>
+
+                    <form id="registerForm">
+                        <input type="text" id="fullname" class="form-control" placeholder="Họ và tên" required>
+                        <div class="mb-3 d-flex gap-3">
+                            <label><input type="radio" name="gender" value="Nam" checked> Nam</label>
+                            <label><input type="radio" name="gender" value="Nữ"> Nữ</label>
+                            <label><input type="radio" name="gender" value="Không tiết lộ"> Không tiết lộ</label>
+                        </div>
+                        <input type="email" id="email" class="form-control" placeholder="Email" required>
+                        <input type="password" id="password" class="form-control" placeholder="Mật khẩu" required>
+                        <input type="password" id="confirmPassword" class="form-control" placeholder="Xác nhận mật khẩu"
+                            required>
+
+                        <button type="submit" class="btn-auth">ĐĂNG KÝ</button>
+                        
+                        <div class="text-center my-3 text-muted">hoặc</div>
+                        <button type="button" id="btnGoogleRegister"
+                            class="btn btn-outline-light w-100 d-flex align-items-center justify-content-center gap-2"
+                            style="border-radius: var(--radius); padding: 0.75rem;">
+                            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20"
+                                height="20" alt="Google">
+                            Đăng ký nhanh bằng Google
+                        </button>
+                    </form>
+                    <p class="text-center mt-4">Đã có tài khoản? <a href="dangnhap.html" class="auth-link">Đăng nhập</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db, createUserWithEmailAndPassword, signInWithPopup, googleProvider, doc, setDoc, getDoc } from './firebase-config.js';
+
+        const images = ["https://picsum.photos/1200/800?dark", "https://picsum.photos/1200/800?city"];
+        let i = 0;
+        const slider = document.getElementById("slider");
+        setInterval(() => {
+            slider.style.backgroundImage = `url('${images[i++ % images.length]}')`;
+        }, 5000);
+        slider.style.backgroundImage = `url('${images[0]}')`;
+
+        // Logic đăng ký bằng Firebase
+        document.getElementById("registerForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("email").value;
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+            const fullname = document.getElementById("fullname").value;
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+
+            if (password !== confirmPassword) {
+                return alert("Mật khẩu không trùng khớp!");
+            }
+
+            try {
+                // 1. Tạo tài khoản trong Firebase Auth
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // 2. Lưu thông tin bổ sung vào Firestore
+                await setDoc(doc(db, "users", user.uid), {
+                    fullname: fullname,
+                    gender: gender,
+                    email: email,
+                    createdAt: new Date().toISOString()
+                });
+
+                alert("Chúc mừng! Bạn đã đăng ký thành công.");
+                window.location.href = "Dangnhap.html";
+            } catch (error) {
+                // Xử lý thông báo lỗi thân thiện cho từng trường hợp
+                if (error.code === 'auth/email-already-in-use') {
+                    alert("Email này đã được sử dụng. Vui lòng chuyển sang trang Đăng nhập!");
+                } else if (error.code === 'auth/weak-password') {
+                    alert("Mật khẩu quá yếu! Mật khẩu cần có ít nhất 6 ký tự.");
+                } else {
+                    alert("Đăng ký thất bại: " + error.message);
+                }
+            }
+        });
+
+        // LOGIC ĐĂNG KÝ BẰNG GOOGLE
+    document.getElementById("btnGoogleRegister").addEventListener("click", async () => {
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            const user = result.user;
+
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+
+            // Lưu thông tin người dùng từ tài khoản Google
+            if (!userSnap.exists()) {
+                await setDoc(userRef, {
+                    fullname: user.displayName || "Người dùng Google",
+                    email: user.email,
+                    avatar: user.photoURL || "",
+                    gender: "Không tiết lộ",
+                    createdAt: new Date().toISOString()
+                });
+            }
+
+            alert("Đăng ký & Đăng nhập Google thành công!");
+            window.location.href = "Trangchu.html";
+        } catch (error) {
+            console.error("Lỗi Google Auth:", error);
+            alert("Đăng ký Google thất bại: " + error.message);
+        }
+    });
+    </script>
+</body>
+
+</html>

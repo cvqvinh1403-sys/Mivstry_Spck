@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý Phim - MIVSTRY</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="dangnhapky.css">
+    <link rel="stylesheet" href="Quanly.css">
+</head>
+
+<body class="bg-dark p-4">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="auth-title">Quản lý Kho Phim</h2>
+            <button class="btn btn-outline-light" onclick="location.href='Trangchu.html'">Quay lại</button>
+            <button class="btn btn-warning" onclick="openMovieModal()">+ Thêm Phim Mới</button>
+        </div>
+
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Poster</th>
+                    <th>Tên Phim</th>
+                    <th>Thể Loại</th>
+                    <th>Năm</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody id="movieTableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="modal fade" id="movieModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title" id="modalTitle">Thông tin phim</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="movieForm">
+                        <input type="hidden" id="editIndex" value="">
+
+                        <div class="text-center">
+                            <img id="p-preview" src="https://via.placeholder.com/100x140?text=Poster"
+                                class="img-preview">
+                            <div class="mb-3">
+                                <label for="mImage" class="btn btn-sm btn-outline-light">Chọn hình ảnh</label>
+                                <input type="file" id="mImage" hidden accept="image/*">
+                            </div>
+                        </div>
+
+                        <input type="text" id="mTitle" class="form-control" placeholder="Tên phim" required>
+                        <input type="text" id="mGenre" class="form-control" placeholder="Thể loại" required>
+                        <input type="number" id="mYear" class="form-control" placeholder="Năm sản xuất" required>
+
+                        <button type="submit" class="btn-auth">Lưu dữ liệu</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { db, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from './firebase-config.js';
+
+        const placeholderImg = "https://via.placeholder.com/100x140?text=No+Image";
+        const movieModal = new bootstrap.Modal(document.getElementById('movieModal'));
+        let movies = [];
+
+        // 1. Render danh sách ra bảng từ Firestore
+        async function renderMovies() {
+            const body = document.getElementById("movieTableBody");
+            body.innerHTML = "<tr><td colspan='5' class='text-center'>Đang tải kho phim...</td></tr>";
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "myMovies"));
+                movies = [];
+                querySnapshot.forEach((docSnap) => {
+                    movies.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                if (movies.length === 0) {
+                    body.innerHTML = "<tr><td colspan='5' class='text-center'>Chưa có phim nào trong kho.</td></tr>";
+                    return;
+                }
+
+                body.innerHTML = movies.map((m, index) => `
+                <tr>
+                    <td><img src="${m.poster || placeholderImg}" style="width: 50px; height: 70px; object-fit: cover; border-radius: 4px;"></td>
+                    <td class="fw-bold">${m.title}</td>
+                    <td>${m.genre}</td>
+                    <td>${m.year}</td>
+                    <td>
+                        <button class="btn-edit btn btn-sm btn-outline-warning me-2" data-index="${index}">Sửa</button>
+                        <button class="btn-delete btn btn-sm btn-outline-danger" data-id="${m.id}">Xóa</button>
+                    </td>
+                </tr>
+            `).join('');
+
+                // Gán sự kiện click cho nút Sửa & Xóa
+                document.querySelectorAll('.btn-edit').forEach(btn => {
+                    btn.addEventListener('click', (e) => editMovie(e.target.dataset.index));
+                });
+                document.querySelectorAll('.btn-delete').forEach(btn => {
+                    btn.addEventListener('click', (e) => deleteMovie(e.target.dataset.id));
+                });
+
+            } catch (error) {
+                console.error("Lỗi khi tải dữ liệu phim:", error);
+                body.innerHTML = "<tr><td colspan='5' class='text-center text-danger'>Lỗi tải dữ liệu phim!</td></tr>";
+            }
+        }
+
+        // 2. Logic Preview Ảnh
+        document.getElementById("mImage").addEventListener("change", function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (ex) => document.getElementById("p-preview").src = ex.target.result;
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 3. Hàm Mở Modal
+        window.openMovieModal = function (index = null) {
+            const form = document.getElementById("movieForm");
+            form.reset();
+
+            if (index !== null) {
+                document.getElementById("modalTitle").innerText = "Chỉnh sửa phim";
+                document.getElementById("editIndex").value = index;
+
+                const m = movies[index];
+                document.getElementById("mTitle").value = m.title;
+                document.getElementById("mGenre").value = m.genre;
+                document.getElementById("mYear").value = m.year;
+                document.getElementById("p-preview").src = m.poster || placeholderImg;
+            } else {
+                document.getElementById("modalTitle").innerText = "Thêm phim mới";
+                document.getElementById("editIndex").value = "";
+                document.getElementById("p-preview").src = placeholderImg;
+            }
+            movieModal.show();
+        };
+
+        function editMovie(index) {
+            window.openMovieModal(index);
+        }
+
+        // 4. Lưu hoặc Cập nhật Phim vào Firestore
+        document.getElementById("movieForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const index = document.getElementById("editIndex").value;
+            const currentPreviewSrc = document.getElementById("p-preview").src;
+
+            const movieData = {
+                title: document.getElementById("mTitle").value,
+                genre: document.getElementById("mGenre").value,
+                year: document.getElementById("mYear").value,
+                poster: currentPreviewSrc === placeholderImg ? null : currentPreviewSrc
+            };
+
+            try {
+                if (index === "") {
+                    // Thêm mới vào Firestore
+                    await addDoc(collection(db, "myMovies"), movieData);
+                } else {
+                    // Cập nhật tài liệu trên Firestore
+                    const docId = movies[index].id;
+                    await updateDoc(doc(db, "myMovies", docId), movieData);
+                }
+
+                movieModal.hide();
+                renderMovies();
+            } catch (error) {
+                alert("Lỗi khi lưu dữ liệu: " + error.message);
+            }
+        });
+
+        // 5. Xóa Phim khỏi Firestore
+        async function deleteMovie(id) {
+            if (confirm(`Bạn có chắc chắn muốn xóa phim này?`)) {
+                try {
+                    await deleteDoc(doc(db, "myMovies", id));
+                    renderMovies();
+                } catch (error) {
+                    alert("Xóa thất bại: " + error.message);
+                }
+            }
+        }
+
+        // Khởi chạy khi load trang
+        window.addEventListener('DOMContentLoaded', renderMovies);
+    </script>
+</body>
+
+</html>

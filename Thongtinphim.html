@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIVSTRY - Chi Tiết Phim</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="dangnhapky.css">
+    <link rel="stylesheet" href="Thongtinphim.css">
+</head>
+
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="Trangchu.html">
+                <h2 style="color: var(--primary-color); margin: 0;"><b>MIVSTRY</b></h2>
+            </a>
+            <a href="Trangchu.html" class="btn btn-outline-warning btn-sm">
+                <i class="fas fa-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </nav>
+
+    <div class="container detail-container">
+        <div class="row" id="movie-details">
+            <div class="text-center">
+                <div class="spinner-border text-warning" role="status"></div>
+                <p>Đang tải thông tin phim...</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-5">
+        <hr style="border-color: #444;">
+        <h3 class="text-warning mb-4"><i class="fas fa-comments"></i> Bình luận & Đánh giá</h3>
+
+        <!-- Form gửi bình luận đã tối giản -->
+        <div id="comment-section" class="comment-form bg-dark p-4 rounded mb-5" style="border: 1px solid #333;">
+            <div class="d-flex align-items-center mb-3">
+                <img id="current-user-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                    onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'"
+                    class="rounded-circle me-3"
+                    style="width: 50px; height: 50px; object-fit: cover; border: 2px solid var(--primary-color);">
+                <h5 class="text-light mb-0">Chào, <span id="current-user-name" class="text-warning"></span>!</h5>
+            </div>
+
+            <div class="mb-3">
+                <label class="text-muted d-block mb-2">Đánh giá của bạn:</label>
+                <div class="rating-input fs-3 text-warning">
+                    <i class="far fa-star star-btn" data-value="1"></i>
+                    <i class="far fa-star star-btn" data-value="2"></i>
+                    <i class="far fa-star star-btn" data-value="3"></i>
+                    <i class="far fa-star star-btn" data-value="4"></i>
+                    <i class="far fa-star star-btn" data-value="5"></i>
+                </div>
+                <input type="hidden" id="rating-value" value="0">
+            </div>
+
+            <div class="mb-3">
+                <textarea id="comment-text" class="form-control bg-secondary text-white border-0" rows="3"
+                    placeholder="Nhập cảm nghĩ của bạn về bộ phim..."></textarea>
+            </div>
+            <button id="submit-comment" class="btn btn-warning fw-bold">Gửi bình luận</button>
+        </div>
+
+        <div id="comments-list"></div>
+    </div>
+
+    <!-- Toast Spinner Loading -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
+        <div id="cartToast" class="toast align-items-center text-bg-dark border-secondary fade hide" role="alert">
+            <div class="d-flex p-2">
+                <div class="toast-body d-flex align-items-center gap-3">
+                    <!-- Spinner xoay -->
+                    <div id="toast-spinner" class="spinner-border spinner-border-sm text-warning" role="status"></div>
+                    <!-- Icon tích xanh (Ẩn mặc định) -->
+                    <i id="toast-success-icon" class="fas fa-check-circle text-success fs-5 d-none"></i>
+                    <span id="toast-message">Đang thêm vào giỏ hàng...</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <h4 style="color: var(--primary-color);">MIVSTRY</h4>
+                    <p style="color: #888;">Khám phá thế giới điện ảnh qua góc nhìn tối giản.</p>
+                    <div class="mt-3">
+                        <a href="https://www.facebook.com" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.instagram.com" class="social-icon"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.youtube.com" class="social-icon"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center pt-4 mt-4" style="border-top: 1px solid #333; color: #555;">
+                <p>&copy; 2026 MIVSTRY. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { TMDB_API_KEY } from "./config.js";
+        // 1. Import Firebase Services
+        import { auth, db, collection, addDoc, getDocs, doc, getDoc, query, where } from "./firebase-config.js";
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const movieId = urlParams.get('id');
+        const isLocal = urlParams.get('isLocal') === 'true';
+        const placeholderImg = "https://via.placeholder.com/500x750?text=No+Poster";
+
+        // 2. Hàm Thêm vào giỏ hàng sử dụng Firebase Firestore
+        // Hàm hiển thị Toast Notification linh hoạt
+        function showCartToast(status, message) {
+            const toastEl = document.getElementById('cartToast');
+            const spinner = document.getElementById('toast-spinner');
+            const successIcon = document.getElementById('toast-success-icon');
+            const msgEl = document.getElementById('toast-message');
+
+            msgEl.innerText = message;
+
+            if (status === 'loading') {
+                spinner.classList.remove('d-none');
+                successIcon.classList.add('d-none');
+            } else if (status === 'success') {
+                spinner.classList.add('d-none');
+                successIcon.classList.remove('d-none');
+            }
+
+            const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+            toast.show();
+        }
+
+        window.addToCart = async function (id, title, poster) {
+            // 1. Hiển thị Spinner Loading
+            showCartToast('loading', 'Đang thêm vào giỏ hàng...');
+
+            try {
+                // Kiểm tra xem phim đã có trong giỏ hàng Firestore chưa
+                const q = query(collection(db, "movieCart"), where("movieId", "==", id));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    showCartToast('success', 'Phim này đã có trong giỏ hàng!');
+                    return;
+                }
+
+                // Thêm phim mới vào collection 'movieCart'
+                await addDoc(collection(db, "movieCart"), {
+                    movieId: id,
+                    title: title,
+                    poster: poster,
+                    dateAdded: new Date().toLocaleDateString('vi-VN')
+                });
+
+                // 2. Chuyển Spinner thành Icon thành công
+                showCartToast('success', `Đã thêm "${title}" vào giỏ hàng!`);
+
+            } catch (error) {
+                console.error("Lỗi khi thêm vào giỏ hàng:", error);
+                showCartToast('success', 'Không thể thêm: ' + error.message);
+            }
+        };
+
+        // 3. Hàm Lấy Chi tiết Phim (xử lý cả Phim từ Firestore lẫn TMDB API)
+        async function getMovieDetails() {
+            const detailsContainer = document.getElementById('movie-details');
+
+            if (isLocal) {
+                try {
+                    // Lấy phim từ collection 'myMovies' trong Firestore
+                    const docRef = doc(db, "myMovies", movieId);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        const movie = { id: docSnap.id, ...docSnap.data() };
+                        renderMovie(movie, movie.poster || placeholderImg);
+                    } else {
+                        detailsContainer.innerHTML = "<h3>Không tìm thấy phim nội bộ!</h3>";
+                    }
+                } catch (error) {
+                    console.error("Lỗi lấy thông tin phim nội bộ:", error);
+                    detailsContainer.innerHTML = "<h3>Lỗi kết nối dữ liệu phim nội bộ!</h3>";
+                }
+            } else {
+                try {
+                    const res = await fetch(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${TMDB_API_KEY}&language=vi-VN`);
+                    const movie = await res.json();
+                    const poster = movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : placeholderImg;
+                    renderMovie(movie, poster);
+                } catch (error) {
+                    detailsContainer.innerHTML = "<h3>Lỗi kết nối dữ liệu!</h3>";
+                }
+            }
+        }
+
+        function renderMovie(movie, posterSrc) {
+            const detailsContainer = document.getElementById('movie-details');
+            detailsContainer.innerHTML = `
+        <div class="col-md-4">
+            <img src="${posterSrc}" class="img-fluid rounded movie-poster" alt="${movie.title}">
+        </div>
+        <div class="col-md-8">
+            <h1 class="movie-title">${movie.title}</h1>
+            <h3 style="color: #74777d; font-style: italic; ">${movie.tagline || ''}</h3>
+
+            <div class="mt-4">
+                <p class="info-label"><i class="fas fa-film"></i> ${movie.genre || movie.genres?.map(g => g.name).join(', ') || 'N/A'}</p>
+                <p><span class="info-label"><i class="fas fa-calendar-alt"></i> Ngày phát hành:</span> 
+                   <span style="color: #eee;">${movie.release_date || movie.year}</span></p>
+                <p><span class="info-label"><i class="fas fa-star"></i> Đánh giá:</span> 
+                   <span style="color: #eee;">${movie.vote_average || 'N/A'}/10</span></p>
+            </div>
+
+            <div class="mt-4 d-flex gap-3">
+                <button class="btn btn-warning px-4 py-2 fw-bold" onclick="addToCart('${movie.id}', '${movie.title.replace(/'/g, "\\'")}', '${posterSrc}')">
+                    <i class="fas fa-cart-plus"></i> Thêm vào giỏ hàng
+                </button>
+                <button id="btn-favorite" class="btn btn-outline-danger px-4 py-2" onclick="toggleFavorite('${movie.id}', '${movie.title.replace(/'/g, "\\'")}', '${posterSrc}')">
+                    <i id="fav-icon" class="far fa-heart"></i> <span id="fav-text">Yêu thích</span>
+                </button>
+            </div>
+
+            <div class="overview-box">
+                <h5 class="info-label">Tóm tắt nội dung</h5>
+                <p style="line-height: 1.6; color: #eee;">${movie.overview || 'Hiện chưa có tóm tắt nội dung cho phim này.😔'}</p>
+            </div>
+        </div>
+    `;
+        }
+
+        getMovieDetails();
+
+        // 1. Hàm kiểm tra trạng thái Yêu thích khi mở trang
+        async function checkFavoriteStatus(id) {
+            if (!currentAuthUser) return;
+
+            try {
+                const q = query(
+                    collection(db, "favoriteMovies"),
+                    where("userId", "==", currentAuthUser.uid),
+                    where("movieId", "==", id)
+                );
+                const querySnapshot = await getDocs(q);
+
+                const btnFav = document.getElementById("btn-favorite");
+                const favIcon = document.getElementById("fav-icon");
+                const favText = document.getElementById("fav-text");
+
+                if (!btnFav) return;
+
+                if (!querySnapshot.empty) {
+                    // Phim ĐÃ CÓ trong danh sách yêu thích -> Đổi nút sang trạng thái Active (Trái tim đặc)
+                    btnFav.classList.replace("btn-outline-danger", "btn-danger");
+                    favIcon.classList.replace("far", "fas");
+                    favText.innerText = "Đã yêu thích";
+                    btnFav.dataset.favDocId = querySnapshot.docs[0].id; // Lưu Doc ID để xóa khi bỏ thích
+                } else {
+                    // Phim CHƯA CÓ trong danh sách yêu thích
+                    btnFav.classList.replace("btn-danger", "btn-outline-danger");
+                    favIcon.classList.replace("fas", "far");
+                    favText.innerText = "Yêu thích";
+                    delete btnFav.dataset.favDocId;
+                }
+            } catch (error) {
+                console.error("Lỗi kiểm tra trạng thái yêu thích:", error);
+            }
+        }
+
+        // 2. Hàm Thêm / Xóa khỏi danh sách Yêu thích
+        window.toggleFavorite = async function (id, title, poster) {
+            if (!currentAuthUser) {
+                alert("Vui lòng đăng nhập để sử dụng chức năng này!");
+                return;
+            }
+
+            const btnFav = document.getElementById("btn-favorite");
+            const docId = btnFav.dataset.favDocId;
+
+            try {
+                if (docId) {
+                    // BỎ YÊU THÍCH: Xóa khỏi collection 'favoriteMovies'
+                    await deleteDoc(doc(db, "favoriteMovies", docId));
+                    showCartToast('success', `Đã xóa "${title}" khỏi danh sách yêu thích!`);
+                } else {
+                    // THÊM YÊU THÍCH: Thêm vào collection 'favoriteMovies'
+                    await addDoc(collection(db, "favoriteMovies"), {
+                        userId: currentAuthUser.uid,
+                        movieId: id,
+                        title: title,
+                        poster: poster,
+                        createdAt: new Date().toISOString()
+                    });
+                    showCartToast('success', `Đã thêm "${title}" vào danh sách yêu thích!`);
+                }
+
+                // Cập nhật lại trạng thái giao diện nút bấm
+                checkFavoriteStatus(id);
+            } catch (error) {
+                console.error("Lỗi khi thao tác Yêu thích:", error);
+                alert("Thao tác thất bại: " + error.message);
+            }
+        };
+
+        // 4. Kiểm tra trạng thái đăng nhập qua Firebase Auth
+        let currentAuthUser = null;
+        let currentUserProfile = null;
+        const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+        auth.onAuthStateChanged(async (user) => {
+            const commentSection = document.getElementById('comment-section');
+            if (user) {
+                currentAuthUser = user;
+                try {
+                    const userDoc = await getDoc(doc(db, "users", user.uid));
+                    if (userDoc.exists()) {
+                        currentUserProfile = userDoc.data();
+
+                        // Gán tên người dùng (nếu không có thì lấy phần trước @ của Email hoặc 'Thành viên')
+                        const displayName = currentUserProfile.fullname || user.email.split('@')[0] || "Thành viên";
+                        document.getElementById("current-user-name").innerText = displayName;
+
+                        // Gán avatar (nếu có và không rỗng thì dùng, ngược lại lấy defaultAvatar)
+                        const userAvatar = (currentUserProfile.avatar && currentUserProfile.avatar.trim() !== "")
+                            ? currentUserProfile.avatar
+                            : defaultAvatar;
+
+                        document.getElementById("current-user-avatar").src = userAvatar;
+                    }
+                } catch (e) {
+                    console.error("Lỗi lấy thông tin người dùng:", e);
+                }
+                checkFavoriteStatus(movieId);
+            } else {
+                commentSection.innerHTML = `
+            <div class="text-center py-4">
+                <p class="text-light">Vui lòng <a href="dangnhap.html" class="text-warning">đăng nhập</a> để để lại bình luận.</p>
+            </div>`;
+            }
+        });
+
+        // 5. Xử lý Bình luận & Đánh giá với Firebase
+        let selectedRating = 0;
+        const commentBtn = document.getElementById('submit-comment');
+        const commentInput = document.getElementById('comment-text');
+
+        // Sự kiện chọn sao
+        document.querySelectorAll('.star-btn').forEach(star => {
+            star.addEventListener('click', function () {
+                selectedRating = parseInt(this.getAttribute('data-value'));
+                document.getElementById('rating-value').value = selectedRating;
+                updateStarUI(selectedRating);
+            });
+        });
+
+        function updateStarUI(rating) {
+            document.querySelectorAll('.star-btn').forEach(star => {
+                const val = parseInt(star.getAttribute('data-value'));
+                if (val <= rating) {
+                    star.classList.replace('far', 'fas');
+                } else {
+                    star.classList.replace('fas', 'far');
+                }
+            });
+        }
+
+        // Gửi bình luận lên Firebase Firestore
+        commentBtn.onclick = async function () {
+            const text = commentInput.value.trim();
+            if (selectedRating === 0) {
+                alert("Vui lòng chọn số sao đánh giá!");
+                return;
+            }
+            if (!text) {
+                alert("Vui lòng nhập nội dung bình luận!");
+                return;
+            }
+            if (!currentAuthUser) {
+                alert("Bạn cần đăng nhập để bình luận!");
+                return;
+            }
+
+            // Link ảnh đại diện mặc định nếu tài khoản chưa có avatar
+            const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+            try {
+                const newComment = {
+                    movieId: movieId,
+                    userName: currentUserProfile?.fullname || "Thành viên",
+                    // Ưu tiên dùng avatar tài khoản -> nếu không có thì lấy ảnh mặc định
+                    userAvatar: currentUserProfile?.avatar || defaultAvatar,
+                    rating: selectedRating,
+                    text: text,
+                    date: new Date().toLocaleString('vi-VN'),
+                    createdAt: new Date().toISOString()
+                };
+
+                // Lưu bình luận vào Firestore
+                await addDoc(collection(db, "movieComments"), newComment);
+
+                // Reset form
+                commentInput.value = "";
+                selectedRating = 0;
+                updateStarUI(0);
+
+                // Render lại bình luận
+                renderComments();
+            } catch (error) {
+                console.error("Lỗi gửi bình luận:", error);
+                alert("Không thể gửi bình luận: " + error.message);
+            }
+        };
+
+        // Render bình luận từ Firestore
+        async function renderComments() {
+            const list = document.getElementById('comments-list');
+            const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+            try {
+                const q = query(collection(db, "movieComments"), where("movieId", "==", movieId));
+                const querySnapshot = await getDocs(q);
+
+                let comments = [];
+                querySnapshot.forEach((docSnap) => {
+                    comments.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                comments.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                if (comments.length === 0) {
+                    list.innerHTML = `<p class="text-muted italic">Chưa có bình luận nào cho phim này.</p>`;
+                    return;
+                }
+
+                list.innerHTML = comments.map(c => `
+    <div class="mb-4 p-3 rounded" style="background: #1a1a1a; border: 1px solid #333;">
+        <div class="d-flex align-items-start gap-3">
+            <!-- Nếu c.userAvatar bị lỗi/rỗng thì lấy defaultAvatar -->
+            <img src="${c.userAvatar && c.userAvatar !== 'undefined' ? c.userAvatar : defaultAvatar}" 
+                 class="rounded-circle" width="50" height="50" 
+                 style="object-fit: cover; border: 2px solid var(--primary-color);">
+            
+            <div class="flex-grow-1">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="text-warning mb-1">${c.userName}</h6>
+                    <small class="text-muted">${c.date}</small>
+                </div>
+                <div class="text-warning mb-2" style="font-size: 0.8rem;">
+                    ${Array(5).fill(0).map((_, i) => `<i class="${i < c.rating ? 'fas' : 'far'} fa-star"></i>`).join('')}
+                </div>
+                <p class="mb-0 text-light" style="font-size: 0.95rem;">${c.text}</p>
+            </div>
+        </div>
+    </div>
+`).join('');
+            } catch (error) {
+                console.error("Lỗi khi tải bình luận:", error);
+                list.innerHTML = `<p class="text-danger">Không thể tải danh sách bình luận.</p>`;
+            }
+        }
+
+        renderComments();
+    </script>
+</body>
+
+</html>

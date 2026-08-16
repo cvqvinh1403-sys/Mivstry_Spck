@@ -1,0 +1,26 @@
+table {
+            color: var(--text-main);
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        th {
+            border-color: var(--input-border);
+            color: var(--primary-color);
+        }
+
+        td {
+            border-color: var(--input-border);
+            vertical-align: middle;
+        }
+
+        /* Style cho preview ảnh trong modal */
+        .img-preview {
+            width: 100px;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px dashed var(--input-border);
+            margin-bottom: 10px;
+        }

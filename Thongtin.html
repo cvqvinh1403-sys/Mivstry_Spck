@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tài khoản của tôi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="dangnhapky.css">
+</head>
+
+<body class="bg-dark d-flex align-items-center justify-content-center min-vh-100">
+    <div class="auth-card text-center">
+        <div class="text-center mb-4">
+            <div class="position-relative d-inline-block">
+                <img id="u-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png"
+                    onerror="this.src='https://cdn-icons-png.flaticon.com/512/149/149071.png'"
+                    style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary-color);">
+                
+                <label for="avatar-input" class="position-absolute bottom-0 end-0 bg-warning rounded-circle p-2"
+                    style="cursor: pointer;">
+                    <svg width="20" height="20" fill="black" viewBox="0 0 24 24">
+                        <path
+                            d="M3 4V1h2v3h3v2H5v3H3V6H0V4h3zm3 6V7h3V4h7l1.83 2H21c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V10h3zm7 9c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-3.2-5c0 1.77 1.43 3.2 3.2 3.2s3.2-1.43 3.2-3.2-1.43-3.2-3.2-3.2-3.2 1.43-3.2 3.2z" />
+                    </svg>
+                </label>
+                <input type="file" id="avatar-input" hidden accept="image/*">
+            </div>
+        </div>
+        <h2 class="auth-title">Hồ Sơ Cá Nhân</h2>
+        <hr class="border-secondary">
+        <div class="text-start mt-4">
+            <p><strong>Họ tên:</strong> <span id="u-name">Đang tải...</span></p>
+            <p><strong>Email:</strong> <span id="u-email">Đang tải...</span></p>
+            <p><strong>Giới tính:</strong> <span id="u-gender">Đang tải...</span></p>
+        </div>
+        <div class="d-flex gap-2 mt-4">
+            <a href="Quanly.html" class="btn btn-outline-info w-100">Quản lý Phim</a>
+            <button id="btnLogout" class="btn btn-danger w-100">Đăng xuất</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db, doc, getDoc, updateDoc } from "./firebase-config.js";
+
+        const defaultAvatar = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+        let currentUserUid = null;
+
+        // 1. Kiểm tra trạng thái đăng nhập Firebase
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                window.location.href = "dangnhap.html";
+                return;
+            }
+
+            currentUserUid = user.uid;
+
+            try {
+                // Lấy thông tin user từ Firestore
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    document.getElementById("u-name").innerText = userData.fullname || user.displayName || "Thành viên";
+                    document.getElementById("u-email").innerText = userData.email || user.email;
+                    document.getElementById("u-gender").innerText = userData.gender || "Không tiết lộ";
+
+                    // Hiển thị avatar đồng nhất
+                    const avatarSrc = (userData.avatar && userData.avatar.trim() !== "") 
+                        ? userData.avatar 
+                        : (user.photoURL || defaultAvatar);
+                        
+                    document.getElementById("u-avatar").src = avatarSrc;
+                }
+            } catch (error) {
+                console.error("Lỗi tải thông tin tài khoản:", error);
+            }
+        });
+
+        // 2. Logic Đổi Avatar và đồng bộ lên Firebase Firestore
+        document.getElementById("avatar-input").addEventListener("change", function (e) {
+            const file = e.target.files[0];
+            if (!file || !currentUserUid) return;
+
+            const reader = new FileReader();
+            reader.onloadend = async function () {
+                const base64String = reader.result;
+                
+                // Cập nhật giao diện tạm thời
+                document.getElementById("u-avatar").src = base64String;
+
+                try {
+                    // Cập nhật trường avatar trực tiếp vào Firestore
+                    await updateDoc(doc(db, "users", currentUserUid), {
+                        avatar: base64String
+                    });
+                    alert("Cập nhật ảnh đại diện thành công!");
+                } catch (error) {
+                    console.error("Lỗi cập nhật Avatar lên Firestore:", error);
+                    alert("Không thể lưu ảnh đại diện: " + error.message);
+                }
+            };
+
+            reader.readAsDataURL(file);
+        });
+
+        // 3. Logic Đăng xuất Firebase
+        document.getElementById("btnLogout").addEventListener("click", () => {
+            if (confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+                auth.signOut().then(() => {
+                    window.location.href = "dangnhap.html";
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,172 @@
+        .navbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--input-border);
+        }
+
+        .social-links {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            background: #333;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-icon:hover {
+            background: var(--primary-color);
+            color: #000;
+            transform: translateY(-5px);
+        }
+
+        footer {
+            background: var(--bg-card);
+            border-top: 1px solid var(--input-border);
+            padding: 40px 0 20px;
+            margin-top: 50px;
+            color: var(--text-card);
+        }
+
+        .footer-logo {
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-decoration: none;
+        }
+
+        .footer-link {
+            color: #bbb;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .footer-link:hover {
+            color: var(--primary-color);
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #333;
+            padding-top: 20px;
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #777;
+        }
+
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .movie-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: 0.3s;
+            border: 1px solid var(--input-border);
+        }
+
+        .movie-card:hover {
+            transform: scale(1.05);
+            border-color: var(--primary-color);
+            border-width: 2px;
+        }
+
+        .movie-card img {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+        }
+
+        .movie-info {
+            padding: 10px;
+            text-align: center;
+        }
+
+        .movie-info small {
+            color: #cccccc !important;
+            display: block;
+            text-align: center;
+            margin-top: 5px;
+            width: 100%;
+        }
+
+        .cart-icon-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-left: 15px;
+        }
+
+        .cart-badge {
+            position: absolute;
+            top: -5px;
+            right: -8px;
+            background-color: var(--primary-color);
+            color: #000;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 2px 5px;
+            border-radius: 50%;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        .btn-cart-nav {
+            color: var(--text-card);
+            font-size: 1.2rem;
+            transition: 0.3s;
+        }
+
+        .btn-cart-nav:hover {
+            color: var(--primary-color);
+        }
+
+        /* Màu cho nút Thể loại (Hashtag) */
+#genreDropdown {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+#genreDropdown:hover, #genreDropdown:focus {
+    background-color: var(--primary-color);
+    color: #000 !important; /* Chữ đen trên nền vàng */
+    box-shadow: 0 0 10px rgba(212, 167, 92, 0.5);
+}
+
+/* Màu cho các mục hashtag trong menu xổ xuống */
+.dropdown-menu-dark .dropdown-item {
+    transition: 0.3s;
+}
+
+.dropdown-menu-dark .dropdown-item:hover {
+    background-color: var(--primary-color);
+    color: #000;
+}
+
+/* Tùy chỉnh lại nút Tìm kiếm cho đồng bộ */
+.btn-outline-warning {
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
+}
+
+.btn-outline-warning:hover {
+    background-color: var(--primary-color) !important;
+    color: #000 !important;
+}
+
+        :root {
+            --primary-color: #d4a75c;
+            --bg-color: #121212;
+            --bg-card: #1e1e1e;
+        }

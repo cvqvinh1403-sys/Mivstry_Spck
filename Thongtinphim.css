@@ -1,0 +1,101 @@
+:root {
+            --primary-color: #d4a75c;
+            --bg-color: #121212;
+            --bg-card: #1e1e1e;
+            --text-card: #f0f0f0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-card);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: var(--bg-card);
+            border-bottom: 1px solid #333;
+        }
+
+        .detail-container {
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+
+        .poster-img {
+            width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+        }
+
+        .movie-title {
+            color: var(--primary-color);
+            font-weight: bold;
+            font-size: 2.5rem;
+        }
+
+        .info-label {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-right: 10px;
+        }
+
+        .overview-box {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color);
+            margin-top: 20px;
+        }
+
+        .overview-box p {
+            color: #e0e0e0 !important;
+        }
+
+        .info-label {
+            color: var(--primary-color) !important;
+        }
+
+        footer {
+            background: var(--bg-card);
+            border-top: 1px solid #333;
+            padding: 40px 0 20px;
+            margin-top: 50px;
+        }
+
+        .social-icon {
+            width: 35px;
+            height: 35px;
+            background: #333;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            text-decoration: none;
+            transition: 0.3s;
+            margin-right: 10px;
+        }
+
+        .social-icon:hover {
+            background: var(--primary-color);
+            color: #000;
+            transform: translateY(-3px);
+        }
+
+        .star-btn {
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-right: 5px;
+        }
+
+        .star-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .comment-form textarea:focus {
+            background-color: #444 !important;
+            color: white !important;
+            box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.25);
+            border: 1px solid var(--primary-color);
+        }
